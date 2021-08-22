@@ -1,2 +1,2 @@
-pip install trafilatura
-pip install keyBert
+pip3 install trafilatura
+pip3 install keyBert
