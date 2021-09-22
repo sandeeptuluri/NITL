@@ -1,21 +1,20 @@
-from os import link
-import trafilatura
 from keybert import KeyBERT
+from trafilatura import fetch_url, extract
 from textblob import TextBlob
 
 
 from flask import Flask, request, render_template
-app = Flask(__name__)
+application = Flask(__name__)
 
-@app.route('/')
+@application.route('/')
 def ks():
     return render_template("ks.html")
 
-@app.route('/form_get', methods=['POST','GET'])
+@application.route('/form_get', methods=['POST','GET'])
 def sentiment():
     url = request.form['link']
-    html = trafilatura.fetch_url(url)
-    data = trafilatura.extract(html)
+    html = fetch_url(url)
+    data = extract(html)
     data_clean = data.replace("\n"," ").replace("\'", "")
     text = data_clean
 
@@ -23,7 +22,7 @@ def sentiment():
     keywords = kb.extract_keywords(text, stop_words='english')
 
     analysis = TextBlob(text)
-    a = analysis.polarity
+    a = analysis.sentiment.polarity
     def type():
         if (a>0):
             return("Positive")
@@ -37,4 +36,4 @@ def sentiment():
     
     return render_template("ks.html", info=dc)
 if __name__ == '__main__':
-    app.run()
+    application.run(debug=True)
