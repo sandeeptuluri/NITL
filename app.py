@@ -1,27 +1,26 @@
 from keybert import KeyBERT
 from trafilatura import fetch_url, extract
 from textblob import TextBlob
+from transformers import pipeline, BartForConditionalGeneration, AutoTokenizer
 
 
 from flask import Flask, request, render_template
-application = Flask(__name__)
+app = Flask(__name__)
 
-@application.route('/')
+@app.route('/')
 def ks():
     return render_template("ks.html")
 
-@application.route('/form_get', methods=['POST','GET'])
+@app.route('/form_get', methods=['POST','GET'])
 def sentiment():
     url = request.form['link']
     html = fetch_url(url)
     data = extract(html)
-    data_clean = data.replace("\n"," ").replace("\'", "")
-    text = data_clean
 
     kb = KeyBERT('distilbert-base-nli-mean-tokens')
-    keywords = kb.extract_keywords(text, stop_words='english')
+    keywords = kb.extract_keywords(data, stop_words='english')
 
-    analysis = TextBlob(text)
+    analysis = TextBlob(data)
     a = analysis.sentiment.polarity
     def type():
         if (a>0):
@@ -30,10 +29,18 @@ def sentiment():
             return("Negative")
     c = type()
 
+
+    model = BartForConditionalGeneration.from_pretrained('sshleifer/distilbart-cnn-12-6')
+    token = AutoTokenizer.from_pretrained('sshleifer/distilbart-cnn-12-6')
+    
+    process = pipeline('summarization',model=model, tokenizer=token)
+    summary = process(data, truncation=True)
+
     dc = {}
     dc['KEYWORDS']=keywords
     dc['SENTIMENT']=c
+    dc['Summary']=summary
     
     return render_template("ks.html", info=dc)
 if __name__ == '__main__':
-    application.run(debug=True)
+    app.run(host="127.0.0.1",port=8080,debug=True)
